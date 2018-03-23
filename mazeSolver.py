@@ -23,25 +23,27 @@ import argparse
 # - At the first hole on the right (mazeMap), turn 90 degrees on the right (turns)
 # - Then at the second hole on the left, turn 90 degrees on the left
 
-
-
 mazeMap = []
 
 mazeMap.append(['Right', 1])
-mazeMap.append(['Left', 2])
+mazeMap.append(['Right', 1])
 mazeMap.append(['Left', 1])
 
 turns = []
 
 turns.append([90, 'Right'])
+turns.append([90, 'Right'])
 turns.append([90, 'Left'])
-turns.append([90, 'Left'])
+
+
+SPEED = 0.1
+# Linear speed of the bot
 
 def solveMaze(name=""):
     bot = Turtlebot(name)
     hasTurned = False
 
-    while not rospy.is_shutdown():
+    while not rospy.is_shutdown() and len(mazeMap) > 0 and len(turns) > 0:
         rospy.loginfo("Next Detection : " + mazeMap[0][0] + " in " + str(mazeMap[0][1]))
         if mazeMap[0][0] == 'Left': # Next way is on the left
             if bot.detectHoleLeft() and not hasTurned:
@@ -59,7 +61,7 @@ def solveMaze(name=""):
                     while bot.detectHoleLeft(): # wait that this turn is passed
                         pass
             else:
-                bot.moveForward(0.1)
+                bot.moveForward(SPEED)
                 while (bot.detectHoleLeft()) and hasTurned:
                     rospy.loginfo("Waiting end of hole after turn")
                 hasTurned = False
@@ -80,7 +82,7 @@ def solveMaze(name=""):
                     while bot.detectHoleRight():
                         pass
             else:
-                bot.moveForward(0.1)
+                bot.moveForward(SPEED)
                 while (bot.detectHoleRight()) and hasTurned:
                     rospy.loginfo("Waiting end of hole after turn")
                 hasTurned = False
@@ -96,14 +98,14 @@ def getData(ip, port):
     TCP_PORT = int(port)
     BUFFER_SIZE = 1024
     MESSAGE = 'TurtleBot'
-
+    rospy.loginfo("Receiving data from " + ip + ":" + port)
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((TCP_IP, TCP_PORT))
     s.send(MESSAGE.encode())
     data = s.recv(BUFFER_SIZE)
     s.close()
-    turns = []
-    mazeMap = []
+    del turns[:]
+    del mazeMap[:]
     for action in data.decode().split(';'):
         if action:
             action = action.split(' ')
@@ -121,6 +123,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.address and args.port:
         getData(args.address, args.port)
+        print("------MazeMap---------")
         print(mazeMap)
+        print("------Turns-----------")
         print(turns)
     run(args.name)
